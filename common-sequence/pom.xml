@@ -3,4 +3,17 @@
   <groupId>common-sequence</groupId>
   <artifactId>common-sequence</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  
+  <dependencies>
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-api</artifactId>
+		<version>1.7.21</version>
+	</dependency>
+	<dependency>
+		<groupId>org.apache.commons</groupId>
+		<artifactId>commons-lang3</artifactId>
+		<version>3.6</version>
+	</dependency>
+  </dependencies>
 </project>
