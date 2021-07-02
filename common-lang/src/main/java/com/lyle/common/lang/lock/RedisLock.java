@@ -60,16 +60,15 @@ public class RedisLock {
 	}
 
 	/**
-	 * 尝试获取锁，获取不到时自旋等待
+	 * 获取锁，获取不到时自旋等待
 	 * 
 	 * @return
 	 * @throws InterruptedException
 	 */
-	public boolean tryLockAndSpinWait() throws InterruptedException {
+	public void lock() throws InterruptedException {
 		while (!tryLock()) {
-			Thread.sleep(200);
+			Thread.sleep(50);
 		}
-		return true;
 	}
 
 	/**

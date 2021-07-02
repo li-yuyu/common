@@ -23,48 +23,48 @@ import com.lyle.common.lang.lock.RedisLock;
 @Component
 public class RedisCacheAspect {
 
-	public static final String LOCK_SUFFIX = ":mutexLock";
+    public static final String LOCK_SUFFIX = ":mutexLock";
 
-	@Autowired
-	protected RedisTemplate<String, Object> objectRedisTemplate;
-	@Autowired
-	protected RedisTemplate<String, String> stringRedisTemplate;
+    @Autowired
+    protected RedisTemplate<String, Object> objectRedisTemplate;
+    @Autowired
+    protected RedisTemplate<String, String> stringRedisTemplate;
 
-	@Pointcut("@annotation(com.liyuyu.art.common.redis.Cacheable)")
-	public void cacheablePointcut() {
-	}
+    @Pointcut("@annotation(com.lyle.common.lang.cache.Cacheable)")
+    public void cacheablePointcut() {
+    }
 
-	@Around("cacheablePointcut()")
-	public Object doAround(ProceedingJoinPoint pjp) throws Throwable {
-		Cacheable annotation = findAnnotation(pjp);
+    @Around("cacheablePointcut()")
+    public Object doAround(ProceedingJoinPoint pjp) throws Throwable {
+        Cacheable annotation = findAnnotation(pjp);
 
-		BoundValueOperations<String, Object> ops = objectRedisTemplate.boundValueOps(annotation.key());
+        BoundValueOperations<String, Object> ops = objectRedisTemplate.boundValueOps(annotation.key());
 
-		if (ops.getExpire() > TimeUnit.SECONDS.convert(annotation.preloadTime(), annotation.timeUnit())) {
-			return ops.get();
-		}
+        if (ops.getExpire() > TimeUnit.SECONDS.convert(annotation.preloadTime(), annotation.timeUnit())) {
+            return ops.get();
+        }
 
-		RedisLock redisLock = new RedisLock(stringRedisTemplate, annotation.key() + LOCK_SUFFIX, 1, TimeUnit.MINUTES);
-		if (!redisLock.tryLock()) {
-			// 未获取到锁的线程继续返回缓存中内容
-			return ops.get();
-		}
+        RedisLock redisLock = new RedisLock(stringRedisTemplate, annotation.key() + LOCK_SUFFIX, 1, TimeUnit.MINUTES);
+        if (!redisLock.tryLock()) {
+            // 未获取到锁的线程继续返回缓存中内容
+            return ops.get();
+        }
 
-		// 获取到锁的线程，执行方法并刷新缓存
-		Object result = pjp.proceed();
-		ops.set(result, annotation.expireTime(), annotation.timeUnit());
+        // 获取到锁的线程，执行方法并刷新缓存
+        Object result = pjp.proceed();
+        ops.set(result, annotation.expireTime(), annotation.timeUnit());
 
-		redisLock.unlock();
+        redisLock.unlock();
 
-		return result;
-	}
+        return result;
+    }
 
-	private Cacheable findAnnotation(ProceedingJoinPoint pjp) throws NoSuchMethodException, SecurityException {
-		MethodSignature ms = (MethodSignature) pjp.getSignature();
-		Class<?> classTarget = pjp.getTarget().getClass();
-		Method method = classTarget.getMethod(ms.getName(), ms.getParameterTypes());
+    private Cacheable findAnnotation(ProceedingJoinPoint pjp) throws NoSuchMethodException, SecurityException {
+        MethodSignature ms = (MethodSignature) pjp.getSignature();
+        Class<?> classTarget = pjp.getTarget().getClass();
+        Method method = classTarget.getMethod(ms.getName(), ms.getParameterTypes());
 
-		return method.getAnnotation(Cacheable.class);
-	}
+        return method.getAnnotation(Cacheable.class);
+    }
 
 }
