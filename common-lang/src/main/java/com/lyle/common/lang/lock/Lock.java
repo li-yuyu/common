@@ -2,11 +2,14 @@ package com.lyle.common.lang.lock;
 
 public interface Lock {
 
-    boolean lock();
+    /**
+     * 获取锁，获取不到等待
+     */
+    void lock();
 
-    boolean lock(long timeout);
+    boolean tryLock();
 
-    boolean lock(long timeout, long expire);
+    boolean tryLock(long timeout);
 
     void unlock();
 
