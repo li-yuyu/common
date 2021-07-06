@@ -12,76 +12,73 @@ import org.springframework.data.redis.core.script.RedisScript;
  * @author Lyle
  * @date 2019-06-14
  */
-public class RedisLock {
+public class RedisLock implements Lock {
 
-	private RedisTemplate<String, String> redisTemplate;
-	private String key;
-	private String value;
-	private long timeout;
-	private TimeUnit unit;
-	private static final String UNLOCK_SCRIPT;
+    private RedisTemplate<String, String> redisTemplate;
+    private String key;
+    private String value;
+    private long expire;
+    private TimeUnit unit;
+    private static final String UNLOCK_SCRIPT;
 
-	static {
-		StringBuilder sb = new StringBuilder();
-		sb.append("if redis.call(\"get\",KEYS[1]) == ARGV[1] ");
-		sb.append("then ");
-		sb.append("    return redis.call(\"del\",KEYS[1]) ");
-		sb.append("else ");	
-		sb.append("    return 0 ");
-		sb.append("end ");
-		UNLOCK_SCRIPT = sb.toString();
-	}
+    static {
+        StringBuilder sb = new StringBuilder();
+        sb.append("if redis.call(\"get\",KEYS[1]) == ARGV[1] ");
+        sb.append("then ");
+        sb.append("    return redis.call(\"del\",KEYS[1]) ");
+        sb.append("else ");
+        sb.append("    return 0 ");
+        sb.append("end ");
+        UNLOCK_SCRIPT = sb.toString();
+    }
 
-	/**
-	 * @param redisTemplate
-	 * @param key           redis中的键值
-	 * @param timeout       超时时间
-	 * @param unit
-	 */
-	public RedisLock(RedisTemplate<String, String> redisTemplate, String key, long timeout, TimeUnit unit) {
-		super();
-		this.redisTemplate = redisTemplate;
-		this.key = key;
-		this.value = UUID.randomUUID().toString();
-		this.timeout = timeout;
-		this.unit = unit;
-	}
+    /**
+     * @param redisTemplate
+     * @param key           redis键
+     * @param expire        redis键过期时间
+     * @param unit
+     */
+    public RedisLock(RedisTemplate<String, String> redisTemplate, String key, long expire, TimeUnit unit) {
+        super();
+        this.redisTemplate = redisTemplate;
+        this.key = key;
+        this.value = UUID.randomUUID().toString();
+        this.expire = expire;
+        this.unit = unit;
+    }
 
-	/**
-	 * 尝试获取锁
-	 * 
-	 * @return
-	 */
-	public boolean tryLock() {
-		if (redisTemplate.opsForValue().setIfAbsent(key, value, timeout, unit)) {
-			return true;
-		}
-		return false;
-	}
+    public void lock() throws InterruptedException {
+        while (!tryLock()) {
+            Thread.sleep(50);
+        }
+    }
 
-	/**
-	 * 获取锁，获取不到时自旋等待
-	 * 
-	 * @return
-	 * @throws InterruptedException
-	 */
-	public void lock() throws InterruptedException {
-		while (!tryLock()) {
-			Thread.sleep(50);
-		}
-	}
+    public boolean tryLock() {
+        if (redisTemplate.opsForValue().setIfAbsent(key, value, expire, unit)) {
+            return true;
+        }
+        return false;
+    }
 
-	/**
-	 * 解锁
-	 * 
-	 * @return
-	 */
-	public boolean unlock() {
-		RedisScript<Long> redisScript = new DefaultRedisScript<Long>(UNLOCK_SCRIPT, Long.class);
+    public boolean tryLock(long timeout, TimeUnit unit) throws InterruptedException {
+        long nanosTimeout = unit.toNanos(timeout);
+        if (nanosTimeout <= 0L) return false;
+        final long deadline = System.nanoTime() + nanosTimeout;
 
-		Long result = redisTemplate.execute(redisScript, Arrays.asList(key), value);
+        while (!tryLock()) {
+            nanosTimeout = deadline - System.nanoTime();
+            if (nanosTimeout <= 0L) return false;
+            Thread.sleep(50);
+        }
+        return true;
+    }
 
-		return result == 1;
-	}
+    public void unlock() {
+        RedisScript<Long> redisScript = new DefaultRedisScript<Long>(UNLOCK_SCRIPT, Long.class);
+
+        Long result = redisTemplate.execute(redisScript, Arrays.asList(key), value);
+
+//        return result == 1;
+    }
 
 }
