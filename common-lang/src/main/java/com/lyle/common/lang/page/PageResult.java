@@ -13,7 +13,7 @@ public class PageResult<T> implements Serializable {
 
 	private static final long serialVersionUID = -6064104564147446671L;
 
-    private Page page;
+    private Pagenation pagenation;
 
     private List<T> resultData;
     
@@ -21,18 +21,18 @@ public class PageResult<T> implements Serializable {
 		super();
 	}
 
-	public PageResult(Page page, List<T> resultData) {
+	public PageResult(Pagenation pagenation, List<T> resultData) {
 		super();
-		this.page = page;
+		this.pagenation = pagenation;
 		this.resultData = resultData;
 	}
 
-	public Page getPage() {
-		return page;
+	public Pagenation getPage() {
+		return pagenation;
 	}
 
-	public void setPage(Page page) {
-		this.page = page;
+	public void setPage(Pagenation page) {
+		this.pagenation = page;
 	}
 
 	public List<T> getResultData() {
