@@ -1,3 +1,8 @@
 /target/
 /.classpath
 /.project
+/.idea
+/common-concurrent/common-concurrent.iml
+/common-lang/common-lang.iml
+/common-logging/common-logging.iml
+/common-model/common-model.iml
