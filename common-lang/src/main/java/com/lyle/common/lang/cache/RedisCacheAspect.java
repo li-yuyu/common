@@ -50,7 +50,7 @@ public class RedisCacheAspect {
             return ops.get();
         }
 
-        // 获取到锁的线程，执行方法并刷新缓存
+        // 获取到锁的线程， 执行方法并刷新缓存
         Object result = pjp.proceed();
         ops.set(result, annotation.expireTime(), annotation.timeUnit());
 
